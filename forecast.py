@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 import pandas as pd
-import random
+import requests
 from prophet import Prophet
 from prophet.serialize import model_to_json, model_from_json
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
@@ -12,17 +12,21 @@ p2 = None
 p3 = None
 
 def load():
+    print("LOAD")
     global p, p2, p3
 
     if p is None:
+        print("LOAD1")
         with open('f1.json', 'r') as fin:
             p = model_from_json(fin.read())
 
     if p2 is None:
+        print("LOAD2")
         with open('f2.json', 'r') as fin:
             p2 = model_from_json(fin.read())
 
     if p3 is None:
+        print("LOAD3")
         with open('f3.json', 'r') as fin:
             p3 = model_from_json(fin.read())
 
@@ -31,12 +35,16 @@ def load():
 
 @app.route('/predict')
 def predict():
+    r = requests.get('https://smartparking-backend.herokuapp.com/getMinutes?latitude=38.4238362&longitude=-78.8619331')
+    minutes = r.json()['minutes']
+    #minutes = request.args['minutes']
+
     p, p2, p3 = load()
 
-    minutes = random.randint(1, 30)
+    #minutes = random.randint(1, 30)
 
     # extends dataframe
-    future = p.make_future_dataframe(periods=minutes, freq='min')
+    future = p.make_future_dataframe(periods=int(minutes), freq='min')
 
     # calculates predicted values
     forecast = p.predict(future)
@@ -46,7 +54,7 @@ def predict():
 
 
     # extends dataframe
-    future2 = p2.make_future_dataframe(periods=minutes, freq='min')
+    future2 = p2.make_future_dataframe(periods=int(minutes), freq='min')
 
     # calculates predicted values
     forecast2 = p2.predict(future2)
@@ -56,7 +64,7 @@ def predict():
 
 
     # extends dataframe
-    future3 = p3.make_future_dataframe(periods=minutes, freq='min')
+    future3 = p3.make_future_dataframe(periods=int(minutes), freq='min')
 
     # calculates predicted values
     forecast3 = p3.predict(future3)
@@ -118,5 +126,7 @@ def train():
 # do once
 # called whenever Flask server is loaded before we predict
 if __name__ == '__main__':
-    train()
+    if p is None and p2 is None and p3 is None:
+        print("TRAIN")
+        train()
     
