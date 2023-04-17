@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import pandas as pd
 import requests
+import re
 from prophet import Prophet
 from prophet.serialize import model_to_json, model_from_json
 from flask import Flask, jsonify, request
@@ -35,13 +36,26 @@ def load():
 
 @app.route('/predict')
 def predict():
-    r = requests.get('https://smartparking-backend.herokuapp.com/getMinutes?latitude=38.4238362&longitude=-78.8619331')
+    args = request.args
+    if (args.get('latitude') == None) or (args.get('longitude') == None):
+        return "Missing latitude or longitude query parameters", 400
+    
+    latitude = args.get('latitude')
+    longitude = args.get('longitude')
+
+    lat_regex_search = re.search('^(\+|-)?(?:90(?:(?:\.0{1,20})?)|(?:[0-9]|[1-8][0-9])(?:(?:\.[0-9]{1,20})?))$', latitude)
+    long_regex_search = re.search('^(\+|-)?(?:180(?:(?:\.0{1,20})?)|(?:[0-9]|[1-9][0-9]|1[0-7][0-9])(?:(?:\.[0-9]{1,20})?))$', longitude)
+
+    if not lat_regex_search:
+        return "Invalid latitude value", 400
+
+    if not long_regex_search:
+        return "Invalid longitude value", 400
+
+    r = requests.get('https://smartparking-backend.herokuapp.com/getMinutes?latitude=' + latitude + '&longitude=' + longitude)
     minutes = r.json()['minutes']
-    #minutes = request.args['minutes']
 
     p, p2, p3 = load()
-
-    #minutes = random.randint(1, 30)
 
     # extends dataframe
     future = p.make_future_dataframe(periods=int(minutes), freq='min')
@@ -49,30 +63,17 @@ def predict():
     # calculates predicted values
     forecast = p.predict(future)
 
-    # creates forecasted csv file
-    #forecast[['ds', 'yhat']].to_csv('forecast1.csv', index=False)
-
-
     # extends dataframe
     future2 = p2.make_future_dataframe(periods=int(minutes), freq='min')
 
     # calculates predicted values
     forecast2 = p2.predict(future2)
 
-    # creates forecasted csv file
-    #forecast2[['ds', 'yhat']].to_csv('forecast12.csv', index=False)
-
-
     # extends dataframe
     future3 = p3.make_future_dataframe(periods=int(minutes), freq='min')
 
     # calculates predicted values
     forecast3 = p3.predict(future3)
-
-    # creates forecasted csv file
-    #forecast3[['ds', 'yhat']].to_csv('forecast14.csv', index=False)
-
-    #print(forecast['yhat'].iloc[-1], forecast2['yhat'].iloc[-1], forecast3['yhat'].iloc[-1])
 
     v = str(forecast['yhat'].iloc[-1])
     v2 = str(forecast2['yhat'].iloc[-1])
