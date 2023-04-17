@@ -33,6 +33,9 @@ def load():
 
     return p, p2, p3
 
+@app.route("/")
+def index():
+    return "Hello World!"
 
 @app.route('/predict')
 def predict():
