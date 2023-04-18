@@ -33,6 +33,54 @@ def load():
 
     return p, p2, p3
 
+def train():
+    # Sign1_full_fitted.csv
+    df = pd.read_csv('Sign1_full_fitted.csv')
+
+    # renames column labels to work with Prophet
+    df = df.rename(columns={'ts': 'ds', 'y1': 'y'})
+
+    p = Prophet()
+    p.fit(df)
+
+
+    # Sign12_full_fitted.csv
+    df2 = pd.read_csv('Sign12_full_fitted.csv')
+
+    # renames column labels to work with Prophet
+    df2 = df2.rename(columns={'ts': 'ds', 'y12': 'y'})
+
+    p2 = Prophet()
+    p2.fit(df2)
+
+
+    # Sign14_full_fitted.csv
+    df3 = pd.read_csv('Sign14_full_fitted.csv')
+
+    # renames column labels to work with Prophet
+    df3 = df3.rename(columns={'ts': 'ds', 'y14': 'y'})
+
+    p3 = Prophet()
+    p3.fit(df3)
+
+
+    with open('f1.json', 'w') as fout:
+        fout.write(model_to_json(p))
+
+    with open('f2.json', 'w') as fout:
+        fout.write(model_to_json(p2))
+
+    with open('f3.json', 'w') as fout:
+        fout.write(model_to_json(p3))
+
+
+# do once
+# called whenever Flask server is loaded before we predict
+if __name__ == '__main__':
+    if p is None and p2 is None and p3 is None:
+        train()
+    
+
 @app.route("/")
 def index():
     return "Hello World!"
@@ -84,53 +132,3 @@ def predict():
 
     # returns last value for each parking garage
     return jsonify(v, v2, v3)
-
-
-def train():
-    # Sign1_full_fitted.csv
-    df = pd.read_csv('Sign1_full_fitted.csv')
-
-    # renames column labels to work with Prophet
-    df = df.rename(columns={'ts': 'ds', 'y1': 'y'})
-
-    p = Prophet()
-    p.fit(df)
-
-
-    # Sign12_full_fitted.csv
-    df2 = pd.read_csv('Sign12_full_fitted.csv')
-
-    # renames column labels to work with Prophet
-    df2 = df2.rename(columns={'ts': 'ds', 'y12': 'y'})
-
-    p2 = Prophet()
-    p2.fit(df2)
-
-
-    # Sign14_full_fitted.csv
-    df3 = pd.read_csv('Sign14_full_fitted.csv')
-
-    # renames column labels to work with Prophet
-    df3 = df3.rename(columns={'ts': 'ds', 'y14': 'y'})
-
-    p3 = Prophet()
-    p3.fit(df3)
-
-
-    with open('f1.json', 'w') as fout:
-        fout.write(model_to_json(p))
-
-    with open('f2.json', 'w') as fout:
-        fout.write(model_to_json(p2))
-
-    with open('f3.json', 'w') as fout:
-        fout.write(model_to_json(p3))
-
-
-# do once
-# called whenever Flask server is loaded before we predict
-if __name__ == '__main__':
-    if p is None and p2 is None and p3 is None:
-        print("TRAIN")
-        train()
-    
